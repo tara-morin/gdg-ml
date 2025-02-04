@@ -12,7 +12,7 @@ import torch
 
 # columns used in template: 'Released_Year', 'Certificate', 'Runtime', 'Genre' (kind of',
 # 'IMDB_Rating', 'Meta_score', 'No_of_Votes'
-def get_prepared_data(data_path="data"):
+def get_prepared_data(data_path="data/IMBD top 1000.csv"):
 
     # Load raw data
     # this function tries to combine all .csv files in the data folder
@@ -26,13 +26,29 @@ def get_prepared_data(data_path="data"):
     # Drop columns in text format (not used in the demo, may be useful to you)
     data = data.drop(columns=["Poster_Link", "Series_Title", "Overview", "Director", "Star1", "Star2", "Star3", "Star4"])
 
-    # take only the first genre from the list of genres (you might want to do something more sophisticated)
-    data["Genre"] = data["Genre"].apply(lambda x: x.split(",")[0])
+    # Create separate columns for all genres
+    def process_genres(data):
+        # Split genres into list
+        genres = data["Genre"].str.split(",").explode().str.strip()
+        
+        # Create binary columns
+        genre_dummies = pd.get_dummies(genres, prefix="Genre").groupby(level=0).max()
+        
+        # Merge with original data
+        return pd.concat([data.drop("Genre", axis=1), genre_dummies], axis=1)
 
-    # convert "Gross" into a number (remove ",")
-    data["Gross"] = data["Gross"].apply(lambda x: int(x.replace(",", ""))
-                                        if type(x) == str else x)
+    data = process_genres(data)
 
+    def process_gross(data):
+        # Clean numeric format
+        data["Gross"] = data["Gross"].replace('[$,]', '', regex=True).astype(float)
+        
+        # Log-transform to handle skew
+        data["Gross"] = np.log1p(data["Gross"])  # Better for regression
+        return data
+
+    data = process_gross(data)
+    
     # Convert categorical columns to one-hot encoding
     data = pd.get_dummies(data)
 
