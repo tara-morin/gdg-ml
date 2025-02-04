@@ -9,6 +9,7 @@ import torch.optim as optim
 class MyModel(nn.Module):
     def __init__(self, input_dim):
         super(MyModel, self).__init__()
+        print(f"Model initialized with {input_dim} features")  # Debug line
         self.layer1 = nn.Linear(input_dim, 128)
         self.relu1 = nn.ReLU()
         self.layer2 = nn.Linear(128, 64)
