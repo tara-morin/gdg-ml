@@ -30,7 +30,7 @@ def get_prepared_data(data_path="data"):
     df.dropna(subset=['Certificate'], inplace=True)
 
     #converting strings to numbers where applicable
-    df['Gross'] = df['Gross'].replace('[\,]', '', regex=True).astype(int)
+    df['Gross'] = df['Gross'].replace('[,]', '', regex=True).astype(int)
     df['Runtime'] = df['Runtime'].str.replace('min', '').str.strip().astype(int)
     
     #drop labels so they are not one hot encoded
