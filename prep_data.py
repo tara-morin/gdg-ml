@@ -1,44 +1,77 @@
 import pandas as pd
 import numpy as np
 import torch
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.compose import ColumnTransformer
+from sklearn.model_selection import train_test_split
+from sklearn.impute import SimpleImputer
 
-# Load dataset and return cleaned and preprocessed features and target
-# TODO: use more of the columns, preprocess them in a different way,
-#       or even include new features (e.g. from other datasets)
-
-# columns: 'Poster_Link', 'Series_Title', 'Released_Year', 'Certificate',
-#          'Runtime', 'Genre', 'IMDB_Rating', 'Overview', 'Meta_score', 'Director',
-#          'Star1', 'Star2', 'Star3', 'Star4', 'No_of_Votes'
-
-# columns used in template: 'Released_Year', 'Certificate', 'Runtime', 'Genre' (kind of',
-# 'IMDB_Rating', 'Meta_score', 'No_of_Votes'
 def get_prepared_data(data_path="data"):
 
-    # Load raw data
-    # this function tries to combine all .csv files in the data folder
-    # it matches them up using the "Series_Title" column
-    # if you want to use additional datasets, make sure they have a "Series_Title" column
-    # if not, you will need additional logic to join the datasets
-    # do not rename the column by hand, add code before this point to rename it
-    # remember: we will not manually modify your datasets, so your code must do any formatting automatically
-    data = get_raw_data(data_path)
+    
+    df = get_raw_data(data_path)
 
-    # Drop columns in text format (not used in the demo, may be useful to you)
-    data = data.drop(columns=["Poster_Link", "Series_Title", "Overview", "Director", "Star1", "Star2", "Star3", "Star4"])
+    #drop excessive/non-helpful features
+    df.drop('Poster_Link', axis=1, inplace=True)
+    df.drop('Overview', axis=1, inplace=True)
 
-    # take only the first genre from the list of genres (you might want to do something more sophisticated)
-    data["Genre"] = data["Genre"].apply(lambda x: x.split(",")[0])
+    #editing data:
+    df.rename(columns={'Series_Title': 'Movie'}, inplace=True) #changing name to movie is easier
+    labels=df['Movie'].copy()
+    df.loc[df['Movie'] == 'Apollo 13', 'Released_Year'] = '1995' #filling in missing data here.
 
-    # convert "Gross" into a number (remove ",")
-    data["Gross"] = data["Gross"].apply(lambda x: int(x.replace(",", ""))
-                                        if type(x) == str else x)
+    #make sure numeric columns are converted from strings
+    df['Released_Year']= df['Released_Year'].astype(int)
 
-    # Convert categorical columns to one-hot encoding
-    data = pd.get_dummies(data)
+    #dropping rows where gross or certificate is missing
+    df.dropna(subset=['Gross'], inplace=True)
+    df.dropna(subset=['Certificate'], inplace=True)
+
+    #converting strings to numbers where applicable
+    df['Gross'] = df['Gross'].replace('[\,]', '', regex=True).astype(int)
+    df['Runtime'] = df['Runtime'].str.replace('min', '').str.strip().astype(int)
+    
+    #drop labels so they are not one hot encoded
+    labels=df['Movie'].copy()
+    df.drop('Movie', axis=1, inplace=True)
+
+    #dropping gross before scaling
+    og_gross=df['Gross'].copy()
+    df.drop('Gross', axis=1, inplace=True)
+
+    #creating the pipeline
+    num_pipeline= Pipeline([
+        ('scaler',std_scaler),
+        ('imputer', SimpleImputer(strategy='median'))
+    ])
+
+
+    #now selecting only the features I want (make sure to update pipeline)
+    df.drop('Genre', axis=1, inplace=True)
+    df.drop('Star3',axis=1,inplace= True)
+    df.drop('Star4',axis=1,inplace= True)
+    df.drop('Director',axis=1,inplace= True)
+    df.drop('Meta_score',axis=1,inplace= True)
+    df.drop('IMDB_Rating',axis=1,inplace= True)
+
+
+    pipeline= ColumnTransformer([
+        ("cat",OneHotEncoder(),['Certificate','Star1','Star2']),
+        ("num",num_pipeline,['No_of_Votes','Released_Year'])
+    ])
+
+    df_transformed= pipeline.fit_transform(df).toarray()
+    feature_names= pipeline.get_feature_names_out()
+    df_done= pd.DataFrame(df_transformed, columns=feature_names)
+
+    allowed_actors = ["Tom Hanks", "Keanu Reeves", "Tom Cruise"]
+    df_transformed = filter_actors(df_done, allowed_actors)
 
     # Define features and target
-    features = data.drop(columns=["Gross"])
-    target = data["Gross"]
+    features = df_done
+    target = og_gross
 
     # Convert to numpy arrays
     features = np.array(features)
@@ -49,6 +82,15 @@ def get_prepared_data(data_path="data"):
     target = torch.tensor(target, dtype=torch.float32)
 
     return features, target
+
+def filter_actors(df, allowed_actors):
+    allowed_columns = [f'cat__{actor.replace(" ", "_")}' for actor in allowed_actors]
+    
+    actor_columns = [col for col in df.columns if col.startswith("cat__")]
+  
+    columns_to_keep = [col for col in df.columns if col in allowed_columns or col not in actor_columns]
+    
+    return df[columns_to_keep]
 
 def get_all_titles(data_path="data"):
     data = get_raw_data(data_path)
