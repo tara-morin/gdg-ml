@@ -43,7 +43,7 @@ def get_prepared_data(data_path="data"):
 
     #creating the pipeline
     num_pipeline= Pipeline([
-        ('scaler',std_scaler),
+        ('scaler',StandardScaler()),
         ('imputer', SimpleImputer(strategy='median'))
     ])
 

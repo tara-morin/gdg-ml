@@ -9,17 +9,25 @@ import torch.optim as optim
 class MyModel(nn.Module):
     def __init__(self, input_dim):
         super(MyModel, self).__init__()
-        self.layer1 = nn.Linear(input_dim, 128)
-        self.relu1 = nn.ReLU()
-        self.layer2 = nn.Linear(128, 64)
-        self.relu2 = nn.ReLU()
-        self.output_layer = nn.Linear(64, 1)
+        self.layer1 = nn.Linear(input_dim, 256)
+        self.relu1 = nn.LeakyReLU(0.1)
+        self.layer2 = nn.Linear(256, 128)
+        self.relu2 = nn.LeakyReLU()
+        self.layer3= nn.Linear(128.64)
+        self.bn3= nn.BatchNorm1d(64)
+        self.relu3=nn.LeakyReLU(0.1)
+        self.final_layer = nn.Linear(64, 1)
+        self.output_layer=nn.ReLU()
 
     def forward(self, x):
         x = self.layer1(x)
         x = self.relu1(x)
         x = self.layer2(x)
         x = self.relu2(x)
+        x= self.layer3(x)
+        x= self.bn3(x)
+        x= self.relu3(x)
+        x= self.final_layer(x)
         x = self.output_layer(x)
         return x
 
