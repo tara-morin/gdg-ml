@@ -13,7 +13,7 @@ class MyModel(nn.Module):
                 self.layer1.weight.copy_(torch.tensor(start_weights, dtype=torch.float32))
                 self.layer1.bias.copy_(torch.tensor(start_bias, dtype=torch.float32))
             for param in self.layer1.parameters():
-                    param.requires_grad = True
+                    param.requires_grad = False
         self.relu1 = nn.LeakyReLU(0.1)
         self.layer2 = nn.Linear(256, 128)
         self.relu2 = nn.LeakyReLU()
