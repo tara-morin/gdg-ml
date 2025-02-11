@@ -1,8 +1,9 @@
 import torch
 import torch.nn as nn
 from sklearn.model_selection import train_test_split
+import numpy
 
-from prep_data import get_prepared_data, get_all_titles
+from prep_data import get_prepared_data, get_all_titles, get_real_numbers,unscale_predicted_vals
 
 # import model from model.py
 from model import create_model
@@ -11,14 +12,14 @@ from model import create_model
 from train import train_model
 
 # you can call this function to test a pre-trained model (might be useful while testing)
-def test_saved_model(model_path="saved_weights/model.pth"):
+def test_saved_model(model_path="saved_weights/test_model.pth"):
     # Load model
     model = torch.load(model_path)
     model.eval()
 
     # Load data
     features, target = get_prepared_data()
-
+    actual_vals= get_real_numbers()
     # Define loss function
     criterion = torch.nn.MSELoss()
 
@@ -28,6 +29,7 @@ def test_saved_model(model_path="saved_weights/model.pth"):
     # Predict across all data
     with torch.no_grad():
         output = model(features)
+        predicted_vals= unscale_predicted_vals(output)
         loss = criterion(output, target)
         print(f"\nTest Loss: {loss.item()}")
         # test accuracy
@@ -37,7 +39,7 @@ def test_saved_model(model_path="saved_weights/model.pth"):
         # For <movie title>, model predicted <prediction>, actual <actual>
         print("\nSample Predictions vs Actual:")
         for i in range(10):
-            print(f"For {titles[int(i)]}, model predicted {output[i].item()} vs. actual {target[i].item()}")
+            print(f"For {titles[int(i)]}, model predicted {predicted_vals[i].item()} vs. actual {actual_vals[i].item()}")
 
         # print best prediction and worst prediction
         # For <movie title>, model predicted <prediction>, actual <actual>
@@ -49,8 +51,11 @@ def test_saved_model(model_path="saved_weights/model.pth"):
         titles = titles.to_numpy()
         output = output.numpy().flatten()
         target = target.numpy().flatten()
-        print(f"Best Prediction: For {titles[best]}, model predicted {output[best].item()} vs. actual {target[best].item()}")
-        print(f"Worst Prediction: For {titles[worst]}, model predicted {output[worst].item()} vs. actual {target[worst].item()}")
+        predicted_vals=predicted_vals.flatten()
+        actual_vals=actual_vals.to_numpy().flatten()
+
+        print(f"Best Prediction: For {titles[best]}, model predicted {predicted_vals[best].item()} vs. actual {actual_vals[best].item()}")
+        print(f"Worst Prediction: For {titles[worst]}, model predicted {predicted_vals[worst].item()} vs. actual {actual_vals[worst].item()}")
 
 # same function but using a new model
 def test_new_model():

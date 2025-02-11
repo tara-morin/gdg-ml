@@ -3,7 +3,8 @@
 from model import create_model
 from prep_data import get_prepared_data
 from train import train_model
-
+from sklearn.linear_model import LinearRegression
+from test import test_new_model, test_saved_model
 from tqdm import tqdm
 
 def final_cross_validation_test():
@@ -37,8 +38,13 @@ def final_cross_validation_test():
             X_train, X_test = features[train_index], features[test_index]
             y_train, y_test = target[train_index], target[test_index]
 
+            #using a pre-trained linear regressor from sklearn to start out.
+            lin_reg= LinearRegression()
+            lin_reg.fit(X_train,y_train)
+            lin_reg_weights= lin_reg.coef_.reshape(1, -1)
+            lin_reg_bias= lin_reg.intercept_
             # Define model
-            model, optimizer = create_model(X_train)
+            model, optimizer = create_model(X_train,lin_reg_weights,lin_reg_bias)
 
             # Train model
             model = train_model(model, optimizer, criterion, X_train, y_train, X_test, y_test, training_updates=False)
@@ -56,6 +62,8 @@ def final_cross_validation_test():
     # Print out average performance
     print(f"Cross Validation Test Accuracy: {float(sum(accuracy_results)) / k_folds}%")
     print(f"Cross Validation Test Loss: {float(sum(loss_results)) / k_folds}")
+
+    test_new_model()
 
 # DO NOT CHANGE THIS FUNCTION
 if __name__ == '__main__':

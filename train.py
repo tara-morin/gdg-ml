@@ -9,18 +9,21 @@ from prep_data import get_prepared_data
 
 # import model from model.py
 from model import create_model
+from sklearn.linear_model import LinearRegression
 
 
 # TODO modify this function however you want to train the model
 def train_model(model, optimizer, criterion, X_train, y_train, X_val, y_val, training_updates=True):
 
-    num_epochs = 2000 # hint: you shouldn't need anywhere near this many epochs
+    num_epochs = 1000 # hint: you shouldn't need anywhere near this many epochs
 
     for epoch in range(num_epochs):
         optimizer.zero_grad()
         output = model(X_train)
         loss = criterion(output, y_train)
         loss.backward()
+        #line to clip exploding gradient:
+        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=5)
         optimizer.step()
         if training_updates and epoch % (num_epochs // 10) == 0: # print training and validation loss 10 times across training
             with torch.no_grad():
@@ -40,8 +43,15 @@ if __name__ == '__main__':
     # use 80% of the data for training and 20% for validation
     X_train, X_val, y_train, y_val = train_test_split(features, target, test_size=0.2)
 
+    #using a pre-trained linear regressor from sklearn to start out.
+    lin_reg= LinearRegression()
+    lin_reg.fit(X_train,y_train)
+    lin_reg_weights= lin_reg.coef_.reshape(1, -1)
+    lin_reg_bias= lin_reg.intercept_
+
+
     # Define model (feed-forward, two hidden layers)
-    model, optimizer = create_model(X_train)
+    model, optimizer = create_model(X_train,lin_reg_weights,lin_reg_bias)
 
     # Define loss function and optimizer
     criterion = nn.MSELoss()
