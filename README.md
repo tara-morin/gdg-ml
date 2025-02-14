@@ -1,8 +1,7 @@
 # Template Code for GDG ML Competition
 
 ## Description
-This repository contains starter code to use when crafting your solution.
-You should clone it on your machine and work from there.
+Here is my code to predict IMDB box office gross, I updated primarily the model.py file. 
 
 ## How To Use
 ### The repository contains five main files:
